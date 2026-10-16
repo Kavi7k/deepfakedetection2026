@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Veritas — Deepfake risk analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#fff;--bg2:#f5f5f7;--tx:#1d1d1f;--tx2:#6e6e73;--ln:#d2d2d7;--blue:#0071e3;--ok:#34c759;--mid:#ff9f0a;--bad:#ff3b30;--nav:rgba(255,255,255,.72);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--bg2:#1d1d1f;--tx:#f5f5f7;--tx2:#a1a1a6;--ln:#424245;--blue:#2997ff;--nav:rgba(22,22,23,.72)}}
+:root[data-theme="dark"]{--bg:#000;--bg2:#1d1d1f;--tx:#f5f5f7;--tx2:#a1a1a6;--ln:#424245;--blue:#2997ff;--nav:rgba(22,22,23,.72)}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;height:48px;display:flex;align-items:center;padding:0 max(22px,calc(50% - 490px));background:var(--nav);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--ln)}
+nav b{font-size:17px;font-weight:600}
+main{max-width:980px;margin:auto;padding:72px 22px 64px}
+.head{text-align:center}
+h1{font-size:clamp(40px,7vw,80px);font-weight:700;line-height:1.05;letter-spacing:-.045em}
+.sub{font-size:clamp(18px,2.2vw,24px);color:var(--tx2);line-height:1.3;max-width:620px;margin:16px auto 0}
+.btn{display:inline-block;padding:12px 24px;border-radius:980px;background:var(--blue);color:#fff;font-family:inherit;font-size:17px;border:0;cursor:pointer;transition:opacity .2s,transform .2s}
+.btn:hover{opacity:.9}.btn:active{transform:scale(.97)}.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:transparent;color:var(--blue)}
+.btn:focus-visible,#drop:focus-visible,.row:focus-visible,.seg:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#drop{margin:40px auto 0;max-width:680px;border:2px dashed var(--ln);border-radius:28px;padding:56px 24px;background:var(--bg2);cursor:pointer;text-align:center;transition:border-color .2s}
+#drop.over,#drop:hover{border-color:var(--blue)}
+#drop b{display:block;font-size:22px;font-weight:600}#drop span{color:var(--tx2);font-size:15px;display:block;margin-top:6px}
+#prog{display:none;max-width:520px;margin:48px auto 0;text-align:center}
+.bar{height:6px;border-radius:3px;background:var(--ln);overflow:hidden}.bar>div{height:100%;width:0;background:var(--blue);border-radius:3px}
+#stage{margin-top:14px;color:var(--tx2);font-size:15px}
+#report{display:none}
+.top{display:flex;flex-wrap:wrap;gap:40px;align-items:center;justify-content:center}
+.ring{position:relative;width:220px;height:220px}.ring svg{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:14;stroke-linecap:round}
+.ring .v{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .v b{font-size:68px;font-weight:700;letter-spacing:-.05em;line-height:1}.ring .v span{color:var(--tx2);font-size:14px;margin-top:4px}
+.verdict{max-width:380px}.verdict h3{font-size:38px;font-weight:700;letter-spacing:-.035em}.verdict p{margin-top:10px;font-size:17px;color:var(--tx2);line-height:1.45}
+.panel{background:var(--bg2);border-radius:22px;padding:26px;margin-top:16px}
+.panel h4{font-size:19px;font-weight:600}.panel .cap{color:var(--tx2);font-size:14px;margin-top:4px}
+#pv{width:100%;max-height:440px;border-radius:14px;background:#000;display:block;margin-top:16px}
+#vid{display:none}
+.now{margin-top:14px;font-size:15px;color:var(--tx2)}.now b{color:var(--tx)}
+#tl{position:relative;height:26px;margin-top:10px;background:var(--ln);border-radius:8px;overflow:hidden}
+.seg{position:absolute;top:0;bottom:0;border:0;cursor:pointer;padding:0;opacity:.9}.seg:hover{opacity:1}
+#ph{position:absolute;top:0;bottom:0;width:2px;background:var(--tx);pointer-events:none}
+#mom{margin-top:14px;max-height:380px;overflow:auto}
+.row{display:grid;grid-template-columns:56px 44px 1fr 34px minmax(0,1.3fr);gap:12px;align-items:center;width:100%;padding:8px 10px;border:0;background:transparent;color:var(--tx);font:inherit;font-size:14px;text-align:left;border-radius:10px;cursor:pointer}
+.row:hover,.row.on{background:var(--bg)}
+.row img{width:56px;height:32px;object-fit:cover;border-radius:6px;display:block}
+.rk{font-weight:600;text-align:right}.rs2{color:var(--tx2)}
+.sig{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px}
+.m{background:var(--bg2);border-radius:22px;padding:22px 24px}.m .r{display:flex;justify-content:space-between;align-items:baseline}.m h4{font-size:17px;font-weight:600}.m .s{font-size:26px;font-weight:700;letter-spacing:-.03em}
+.m p{color:var(--tx2);font-size:14px;line-height:1.4;margin-top:8px}.m .bar{margin-top:12px}.m .bar>div{transition:width 1s ease}
+.st{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:16px}
+.st div{background:var(--bg);border-radius:14px;padding:14px 16px}.st b{display:block;font-size:22px;font-weight:700;letter-spacing:-.03em}.st span{font-size:13px;color:var(--tx2)}
+.dist{display:flex;height:14px;border-radius:7px;overflow:hidden;margin-top:16px}.dist i{display:block;height:100%}
+.leg{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--tx2)}.leg b{color:var(--tx)}
+.panel li{margin:10px 0 0 18px;color:var(--tx2);font-size:16px;line-height:1.45}
+.acts{text-align:center;margin-top:32px}.fine{margin-top:14px;color:var(--tx2);font-size:13px;text-align:center}
+@media (max-width:560px){.row{grid-template-columns:56px 1fr 34px}.row .tm,.rs2{display:none}main{padding-top:40px}}
+@media print{nav,#drop,.acts,#prog{display:none!important}#report{display:block!important}}
+</style>
+</head>
+<body>
+<nav><b>Veritas</b></nav>
+<main>
+<div class="head" id="head">
+<h1>Is this video real?</h1>
+<p class="sub">Upload a video to get a deepfake risk report. Analysis runs in your browser and nothing is uploaded.</p>
+</div>
+<div id="drop" tabindex="0" role="button" aria-label="Choose a video to analyse">
+<b>Drop a video here</b><span>or click to choose a file · MP4, MOV or WebM</span>
+<input id="file" type="file" accept="video/*" hidden>
+</div>
+<div id="prog"><div class="bar"><div id="pb"></div></div><p id="stage">Preparing…</p></div>
+
+<div id="report">
+<div class="top">
+<div class="ring"><svg width="220" height="220" viewBox="0 0 240 240"><circle cx="120" cy="120" r="106" stroke="var(--ln)"/><circle id="rc" cx="120" cy="120" r="106" stroke="var(--ok)" stroke-dasharray="666" stroke-dashoffset="666" style="transition:stroke-dashoffset 1s ease"/></svg>
+<div class="v"><b id="rs">0</b><span>risk score</span></div></div>
+<div class="verdict"><h3 id="vt"></h3><p id="vp"></p></div>
+</div>
+
+<div class="panel"><h4>Risk across the video</h4><p class="cap" id="fname"></p>
+<video id="pv" controls playsinline></video><p id="now" class="now"></p><div id="tl"></div>
+<p class="cap" style="margin-top:8px">Each segment is one moment, coloured by risk. Select a segment or row to jump there.</p><div id="mom"></div></div>
+
+<div class="panel"><h4>Risk statistics</h4>
+<div class="dist" id="dist"></div><div class="leg" id="leg"></div>
+<div class="st" id="rst"></div></div>
+
+<div class="panel"><h4>Video statistics</h4><div class="st" id="vst"></div></div>
+
+<h4 style="font-size:19px;font-weight:600;margin-top:32px">Signal scores</h4>
+<div class="sig" id="met"></div>
+
+<div class="panel"><h4>Findings</h4><ul id="fd"></ul></div>
+
+<div class="acts"><button class="btn" id="dl">Download PDF report</button> <button class="btn ghost" id="again">Analyse another video</button>
+<p class="fine" id="dlmsg">A statistical screening of visual consistency, not forensic proof. Compression and filters can raise the score on genuine video.</p></div>
+</div>
+</main>
+<video id="vid" muted playsinline preload="auto"></video>
+
+<script>
+const $=id=>document.getElementById(id);
+const drop=$('drop'),file=$('file'),W=256,H=144;
+drop.onclick=()=>file.click();
+drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click()}};
+['dragover','dragenter'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])run(e.dataTransfer.files[0])});
+file.onchange=()=>{if(file.files[0])run(file.files[0])};
+$('again').onclick=()=>{$('report').style.display='none';$('head').style.display='';drop.style.display='';file.value='';window.scrollTo(0,0)};
+
+const clamp=(x,a=0,b=1)=>Math.min(b,Math.max(a,x));
+const f=(x,a,b)=>clamp((x-a)/(b-a))*100;
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const sd=a=>{const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))};
+const cv=a=>{const m=mean(a);return m?sd(a)/m:0};
+const med=a=>{const s=[...a].sort((x,y)=>x-y),h=s.length>>1;return s.length%2?s[h]:(s[h-1]+s[h])/2};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+const fmt=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+const cl=a=>a<35?'var(--ok)':a<65?'var(--mid)':'var(--bad)',lv=a=>a<35?'Low':a<65?'Moderate':'High';
+const rgb=a=>a<35?[52,199,89]:a<65?[255,159,10]:[255,59,48];
+
+function seek(v,t){return new Promise(res=>{const ok=()=>{v.removeEventListener('seeked',ok);res()};v.addEventListener('seeked',ok);v.currentTime=t;setTimeout(res,4000)})}
+function grab(v,ctx){ctx.drawImage(v,0,0,W,H);const d=ctx.getImageData(0,0,W,H).data,g=new Float32Array(W*H);
+ for(let i=0,j=0;i<d.length;i+=4,j++)g[j]=.299*d[i]+.587*d[i+1]+.114*d[i+2];return g}
+function stats(g){let lap=0,lapC=0,nC=0,noise=0,lum=0,cnt=0;
+ for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x,c=g[i];
+  const l=Math.abs(4*c-g[i-1]-g[i+1]-g[i-W]-g[i+W]);lap+=l;lum+=c;cnt++;
+  noise+=Math.abs(c-(g[i-1]+g[i+1]+g[i-W]+g[i+W])/4);
+  if(x>W*.3&&x<W*.7&&y>H*.2&&y<H*.8){lapC+=l;nC++}}
+ return{sharp:lap/cnt,lum:lum/cnt,noise:noise/cnt,ratio:(lapC/nC)/(lap/cnt+1e-6)}}
+function diff(a,b){let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length}
+
+async function run(fl){
+ if(!fl.type.startsWith('video/')){alert('Please choose a video file.');return}
+ drop.style.display='none';$('head').style.display='none';$('report').style.display='none';$('prog').style.display='block';
+ const pb=$('pb'),st=$('stage'),v=$('vid');pb.style.width='4%';st.textContent='Opening video…';
+ if(window.curUrl)URL.revokeObjectURL(window.curUrl);
+ const url=window.curUrl=URL.createObjectURL(fl);v.src=url;
+ try{
+  await new Promise((res,rej)=>{v.onloadeddata=res;v.onerror=()=>rej(new Error('x'))});
+  const dur=v.duration;if(!isFinite(dur)||dur<1)throw new Error('short');
+  const c2=document.createElement('canvas');c2.width=W;c2.height=H;const ctx=c2.getContext('2d',{willReadFrequently:true});
+  const N=Math.min(24,Math.max(10,Math.floor(dur*1.5))),rows=[];
+  for(let k=0;k<N;k++){
+   const t=dur*(.02+.94*k/(N-1)),gap=Math.min(.12,dur/50);
+   st.textContent=`Examining moment ${k+1} of ${N}…`;pb.style.width=(8+84*k/N)+'%';
+   await seek(v,t);const a=grab(v,ctx),th=c2.toDataURL('image/jpeg',.6);
+   await seek(v,Math.min(dur-.01,t+gap));const b=grab(v,ctx);
+   const sa=stats(a),sb=stats(b);
+   rows.push({t,th,d:diff(a,b),sharp:(sa.sharp+sb.sharp)/2,lum:(sa.lum+sb.lum)/2,dl:Math.abs(sa.lum-sb.lum),noise:(sa.noise+sb.noise)/2,ratio:(sa.ratio+sb.ratio)/2});
+  }
+  pb.style.width='100%';report(fl,v,rows,dur);
+ }catch(e){
+  $('prog').style.display='none';$('head').style.display='';drop.style.display='';
+  alert('This video could not be read in your browser. Try an MP4 (H.264) or WebM file.');
+ }
+}
+
+function report(fl,v,rows,dur){
+ const M=[
+  {n:'Motion consistency',s:f(cv(rows.map(r=>r.d)),.3,1.2),d:'How evenly the picture changes between neighbouring frames.'},
+  {n:'Sharpness stability',s:f(cv(rows.map(r=>r.sharp)),.12,.55),d:'Whether detail level stays steady through the clip.'},
+  {n:'Light and colour',s:f(mean(rows.map(r=>r.dl)),.5,3.5),d:'Brightness flicker between consecutive frames.'},
+  {n:'Noise pattern',s:f(cv(rows.map(r=>r.noise)),.12,.5),d:'Consistency of the camera grain across the video.'},
+  {n:'Face-region match',s:f(sd(rows.map(r=>r.ratio)),.07,.35),d:'Whether the centre of frame matches the sharpness around it.'}];
+ const wts=[.25,.2,.2,.15,.2];
+ const score=Math.round(M.reduce((s,m,i)=>s+m.s*wts[i],0));
+ const lvl=score<30?0:score<55?1:2,col=['var(--ok)','var(--mid)','var(--bad)'][lvl];
+ const T=[['Low risk','Signals look consistent with unedited footage. No strong signs of manipulation.'],
+  ['Moderate risk','Some signals are uneven. This can come from heavy compression or editing, so treat the video with care.'],
+  ['High risk','Several signals are inconsistent in ways common to synthetic or face-swapped video. Verify it before trusting it.']][lvl];
+ const name=fl.name.replace(/[<>&]/g,'');
+ $('vt').textContent=T[0];$('vt').style.color=col;$('vp').textContent=T[1];$('fname').textContent=name;
+ $('met').innerHTML=M.map(m=>{const c=cl(m.s);return `<div class="m"><div class="r"><h4>${m.n}</h4><span class="s" style="color:${c}">${Math.round(m.s)}</span></div><div class="bar"><div style="width:0;background:${c}" data-w="${m.s}"></div></div><p>${m.d}</p></div>`}).join('');
+
+ const z=(arr,x)=>{const s=sd(arr)||1;return Math.abs(x-mean(arr))/s};
+ const D=rows.map(r=>r.d),S=rows.map(r=>r.sharp),L=rows.map(r=>r.dl),R=rows.map(r=>r.ratio);
+ const an=rows.map(r=>clamp((z(D,r.d)+z(S,r.sharp)+z(L,r.dl)+z(R,r.ratio))/4/2.2)*100);
+ const rk=an.map(a=>Math.round(clamp(score*.6+a*.4/100*100/100*1,0,100)*1));
+ const why=rows.map(r=>[[z(D,r.d),'Sudden motion change'],[z(S,r.sharp),'Sharpness shift'],[z(L,r.dl),'Brightness flicker'],[z(R,r.ratio),'Face and background mismatch']].sort((a,b)=>b[0]-a[0])[0][1]);
+ const rs=rows.map((r,i)=>rk[i]<35?'Consistent':why[i]);
+
+ // statistics
+ const cnt=[0,0,0];rk.forEach(a=>cnt[a<35?0:a<65?1:2]++);
+ const pc=cnt.map(c=>Math.round(c/rk.length*100));
+ const pk=rk.indexOf(Math.max(...rk));
+ $('dist').innerHTML=['var(--ok)','var(--mid)','var(--bad)'].map((c,i)=>`<i style="width:${cnt[i]/rk.length*100}%;background:${c}"></i>`).join('');
+ $('leg').innerHTML=['Low','Moderate','High'].map((n,i)=>`<span>${n} <b>${pc[i]}%</b> (${cnt[i]} moments)</span>`).join('');
+ const rstat=[[score,'Overall risk'],[Math.round(mean(rk)),'Average moment risk'],[Math.round(med(rk)),'Median moment risk'],[Math.max(...rk),'Peak risk'],[Math.min(...rk),'Lowest risk'],[sd(rk).toFixed(1),'Risk spread (std dev)'],[fmt(rows[pk].t),'Peak risk at'],[cnt[2],'High-risk moments']];
+ const w=v.videoWidth,h=v.videoHeight,g=gcd(w,h),mb=fl.size/1048576,br=fl.size*8/dur/1e6;
+ const vstat=[[fmt(dur),'Duration'],[`${w}×${h}`,'Resolution'],[`${w/g}:${h/g}`,'Aspect ratio'],[(w*h/1e6).toFixed(2)+' MP','Frame size'],[mb.toFixed(1)+' MB','File size'],[br.toFixed(2)+' Mbps','Average bitrate'],[(fl.type||'video').replace('video/','').toUpperCase(),'Format'],[rows.length,'Moments analysed'],
+  [Math.round(mean(rows.map(r=>r.lum))/2.55)+'%','Average brightness'],[mean(S).toFixed(1),'Average sharpness'],[mean(rows.map(r=>r.noise)).toFixed(2),'Average noise level'],[mean(D).toFixed(2),'Average frame change']];
+ const cell=a=>a.map(x=>`<div><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+ $('rst').innerHTML=cell(rstat);$('vst').innerHTML=cell(vstat);
+
+ // findings
+ const sorted=[...M].sort((a,b)=>b.s-a.s),fd=[];
+ sorted.slice(0,2).forEach(m=>fd.push(m.s>=55?`${m.n} is the strongest warning sign (${Math.round(m.s)}/100).`:m.s>=30?`${m.n} is slightly uneven (${Math.round(m.s)}/100).`:`${m.n} looks steady (${Math.round(m.s)}/100).`));
+ fd.push(`The highest-risk moment is near ${fmt(rows[pk].t)} (${rs[pk].toLowerCase()}). Review that part closely.`);
+ if(Math.min(w,h)<480)fd.push('Resolution is low. Small or blurry faces make any detector less reliable.');
+ if(dur<8)fd.push('The clip is short, so the score rests on few frames. A longer clip gives a steadier result.');
+ $('fd').innerHTML=fd.map(x=>`<li>${x}</li>`).join('');
+
+ // video + timeline
+ const pv=$('pv');pv.src=window.curUrl;
+ const sw=94/(rows.length-1);
+ $('tl').innerHTML=rk.map((a,i)=>`<button class="seg" data-i="${i}" style="left:${rows[i].t/dur*100-sw/2}%;width:${sw}%;background:${cl(a)}" title="${fmt(rows[i].t)} · risk ${a}" aria-label="Moment ${fmt(rows[i].t)}, risk ${a}"></button>`).join('')+'<i id="ph"></i>';
+ $('mom').innerHTML=rows.map((r,i)=>`<button class="row" data-i="${i}"><img src="${r.th}" alt=""><span class="tm">${fmt(r.t)}</span><div class="bar"><div style="width:${Math.max(3,rk[i])}%;background:${cl(rk[i])}"></div></div><span class="rk" style="color:${cl(rk[i])}">${rk[i]}</span><span class="rs2">${rs[i]}</span></button>`).join('');
+ document.querySelectorAll('#tl .seg,#mom .row').forEach(b=>b.onclick=()=>{pv.currentTime=rows[+b.dataset.i].t;pv.pause()});
+ const upd=()=>{const t=pv.currentTime;let k=0;for(let i=0;i<rows.length;i++)if(rows[i].t<=t+.05)k=i;
+  $('now').innerHTML=`At <b>${fmt(t)}</b> · risk <b style="color:${cl(rk[k])}">${rk[k]} (${lv(rk[k])})</b> · ${rs[k]}`;
+  $('ph').style.left=(pv.duration?t/pv.duration*100:0)+'%';
+  document.querySelectorAll('#mom .row').forEach((e,i)=>e.classList.toggle('on',i===k))};
+ pv.ontimeupdate=upd;pv.onseeked=upd;pv.onloadedmetadata=upd;
+
+ window.__r={name,score,T,M,rows,rk,rs,rstat,vstat,pc,cnt,fl};
+ $('prog').style.display='none';$('report').style.display='block';upd();
+ const rc=$('rc');rc.style.stroke=col;rc.style.strokeDashoffset=666;
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{rc.style.strokeDashoffset=666*(1-score/100);
+  document.querySelectorAll('[data-w]').forEach(e=>e.style.width=e.dataset.w+'%')}));
+ $('rs').textContent=score;window.scrollTo(0,0);
+}
+
+function makePDF(){
+ const R=window.__r,{jsPDF}=window.jspdf,d=new jsPDF({unit:'mm',format:'a4'}),PW=210,M=16,GR=[110,110,115];
+ let y=18;
+ const tx=(s,x,yy,sz=10,b=false,c=[29,29,31],al='left')=>{d.setFont('helvetica',b?'bold':'normal');d.setFontSize(sz);d.setTextColor(...c);d.text(String(s),x,yy,{align:al})};
+ const need=n=>{if(y+n>284){d.addPage();y=18}};
+ const head=s=>{need(14);y+=4;tx(s,M,y,13,true);y+=7};
+ tx('Veritas',M,y,11,true,GR);tx(new Date().toLocaleString(),PW-M,y,9,false,GR,'right');
+ y=34;tx('Deepfake risk report',M,y,24,true);
+ y+=8;tx(d.splitTextToSize(R.name,PW-2*M)[0],M,y,10,false,GR);
+ const sc=rgb(R.score);y+=22;tx(R.score,M,y,44,true,sc);tx('risk score / 100',M,y+6,9,false,GR);
+ tx(R.T[0],64,y-12,18,true,sc);
+ d.setFont('helvetica','normal');d.setFontSize(10);d.setTextColor(29,29,31);d.text(d.splitTextToSize(R.T[1],PW-64-M),64,y-5);
+ y+=14;
+ head('Signal scores');
+ R.M.forEach(m=>{tx(m.n,M,y,10);d.setFillColor(225,225,230);d.roundedRect(70,y-3,90,3,1.5,1.5,'F');d.setFillColor(...rgb(m.s));d.roundedRect(70,y-3,Math.max(1.5,.9*m.s),3,1.5,1.5,'F');tx(Math.round(m.s),PW-M,y,10,true,rgb(m.s),'right');y+=6.5});
+ const cols=(arr)=>{arr.forEach((a,i)=>{const x=i%2?PW/2+4:M;if(i%2===0)need(6);tx(a[1],x,y,9.5,false,GR);tx(a[0],x+(PW/2-M-6),y,9.5,true,[29,29,31],'right');if(i%2||i===arr.length-1)y+=5.6})};
+ head('Risk statistics');tx(`Low ${R.pc[0]}%  ·  Moderate ${R.pc[1]}%  ·  High ${R.pc[2]}%  (${R.cnt[0]} / ${R.cnt[1]} / ${R.cnt[2]} moments)`,M,y,9.5,false,GR);y+=6;cols(R.rstat);
+ head('Video statistics');cols(R.vstat);
+ head('Risk by moment');
+ R.rows.forEach((r,i)=>{need(6.5);tx(fmt(r.t),M,y,9.5);d.setFillColor(225,225,230);d.roundedRect(34,y-3,70,3,1.5,1.5,'F');d.setFillColor(...rgb(R.rk[i]));d.roundedRect(34,y-3,Math.max(1.5,.7*R.rk[i]),3,1.5,1.5,'F');tx(R.rk[i],112,y,9.5,true,rgb(R.rk[i]),'right');tx(R.rs[i],118,y,9.5,false,GR);y+=6});
+ const top=R.rk.map((a,i)=>[a,i]).sort((a,b)=>b[0]-a[0]).slice(0,4);
+ head('Highest-risk moments');need(36);
+ top.forEach((p,j)=>{const x=M+j*45;try{d.addImage(R.rows[p[1]].th,'JPEG',x,y,42,23.6)}catch(e){}tx(`${fmt(R.rows[p[1]].t)}  ·  risk ${p[0]}`,x,y+28,9,true,rgb(p[0]))});
+ y+=36;need(20);
+ d.setFont('helvetica','normal');d.setFontSize(8);d.setTextColor(...GR);
+ d.text(d.splitTextToSize('This report is a statistical screening of visual consistency (motion, sharpness, lighting, noise and face-region match). It is not forensic proof. Heavy compression, filters and screen recordings can raise the score on genuine video, and a skilled deepfake can score low. Confirm important findings with the original source.',PW-2*M),M,y);
+ return d.output('blob');
+}
+$('dl').onclick=async()=>{
+ const b=$('dl'),msg=$('dlmsg');b.disabled=true;
+ try{
+  if(!window.jspdf)throw {code:'nolib'};
+  const blob=makePDF(),dl=typeof claude!=='undefined'?await claude.use('downloads'):null;
+  const base=window.__r.name.replace(/\.[^.]+$/,'').replace(/[^a-z0-9_-]+/gi,'-').slice(0,40)||'video';
+  if(dl)await dl.save({filename:`veritas-report-${base}.pdf`,data:blob});else window.print();
+ }catch(e){if(!e||e.code!=='declined')msg.textContent='Could not save the PDF here. Use your browser\u2019s print option and choose Save as PDF.'}
+ b.disabled=false;
+};
+</script>
+</body>
+</html>
